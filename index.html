@@ -1,123 +1,700 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Mines Game (Custom Raza Edition)</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Mines Game - Raza Edition</title>
+  <meta name="description" content="Mines game demo with custom images and theme switcher" />
+  <link
+    rel="icon"
+    href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">💎</text></svg>'
+  />
+
   <style>
+    /* ===================== BASE STYLES (original layout) ===================== */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
     body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      background: #fdf6e3;
-      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
       padding: 20px;
     }
-    h1 {
-      color: #333;
+
+    .game-container {
+      display: flex; flex-direction: row; gap: 20px;
+      max-width: 1200px; width: 100%; justify-content: center; align-items: flex-start;
     }
-    #game {
-      display: grid;
-      grid-template-columns: repeat(5, 80px);
-      grid-template-rows: repeat(5, 80px);
-      gap: 8px;
-      justify-content: center;
-      margin-top: 20px;
+
+    .controls-panel {
+      background: rgba(30, 35, 50, 0.95);
+      border-radius: 16px; padding: 25px; width: 320px; min-width: 320px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     }
-    .cell {
-      width: 80px;
-      height: 80px;
-      background: #ff6b6b;
-      border-radius: 10px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background 0.3s;
-      overflow: hidden;
+
+    .game-board-container { display: flex; flex-direction: column; align-items: center; gap: 20px; flex: 1; }
+
+    .game-progress-panel {
+      background: rgba(30, 35, 50, 0.95);
+      border-radius: 16px; padding: 25px; width: 100%; max-width: 350px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     }
-    .cell.revealed {
-      background: #ffd93d;
+
+    .progress-stats {
+      display: flex; justify-content: space-between; margin-bottom: 20px; padding-bottom: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
-    .cell img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      border-radius: 8px;
+
+    .progress-stat { text-align: center; }
+    .progress-label { font-size: 12px; color: #8b92a8; text-transform: uppercase; font-weight: 600; margin-bottom: 8px; }
+    .progress-value { font-size: 24px; font-weight: bold; color: white; }
+
+    .payout-section {
+      background: rgba(104, 211, 145, 0.1);
+      border-radius: 12px; padding: 15px; margin-bottom: 15px;
+      border: 1px solid rgba(104, 211, 145, 0.2);
     }
-    button {
-      margin-top: 20px;
-      padding: 10px 20px;
-      font-size: 16px;
-      border: none;
-      background: #6bcb77;
-      color: white;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background 0.3s;
+    .payout-label { font-size: 14px; color: #8b92a8; margin-bottom: 8px; font-weight: 600; }
+    #payoutMultiplier { color: #68d391; font-weight: bold; }
+    .payout-amount { font-size: 32px; font-weight: bold; color: #68d391; display: flex; align-items: center; justify-content: center; }
+
+    .next-gem-section { text-align: center; margin-bottom: 20px; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px; }
+    .next-gem-label { font-size: 14px; color: #8b92a8; font-weight: 600; }
+    .next-gem-value { color: #68d391; font-weight: bold; font-size: 18px; }
+
+    .cashout-btn-panel {
+      width: 100%; padding: 16px; background: linear-gradient(135deg, #68d391 0%, #48bb78 100%);
+      border: none; border-radius: 12px; color: #1a202c; font-size: 18px; font-weight: bold; cursor: pointer;
+      transition: all 0.3s; text-transform: uppercase; letter-spacing: 1px;
     }
-    button:hover {
-      background: #57a85f;
+    .cashout-btn-panel:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(104,211,145,0.4); }
+
+    .game-board {
+      display: grid; gap: 6px; padding: 16px; background: rgba(20,25,40,0.95);
+      border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
     }
+
+    .tile {
+      width: 65px; height: 65px; background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+      border: none; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-size: 26px; transition: all .3s cubic-bezier(0.4,0,0.2,1); position: relative; overflow: hidden;
+    }
+    .tile:hover:not(.revealed):not(.game-over) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.4); background: linear-gradient(135deg,#5a6578 0%,#3d4758 100%); }
+    .tile.revealed { cursor: default; animation: flip .5s ease; }
+
+    /* When showing images inside tiles */
+    .tile img.tile-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    .tile.gem { background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); box-shadow: inset 0 2px 4px rgba(0,0,0,.2); }
+    .tile.bomb { background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%); box-shadow: inset 0 2px 4px rgba(0,0,0,.2); }
+
+    .tile.pickaxe::before { content: '⛏️'; position: absolute; font-size: 24px; opacity: .3; }
+
+    @keyframes flip { 0%{transform:rotateY(0)} 50%{transform:rotateY(90deg)} 100%{transform:rotateY(0)} }
+
+    .section { margin-bottom: 25px; }
+    .section-title { font-size: 14px; color: #8b92a8; margin-bottom: 10px; text-transform: uppercase; letter-spacing: .5px; }
+
+    .bet-input-container {
+      position: relative; display: flex; align-items: center; background: rgba(45,55,72,.5);
+      border: 2px solid #ffa500; border-radius: 12px; padding: 10px 12px; transition: all .3s; flex: 1; min-width: 0;
+    }
+    .bet-input-container:focus-within { border-color: #ffb84d; box-shadow: 0 0 0 3px rgba(255,165,0,.1); }
+
+    .currency-icon {
+      width: 24px; height: 24px; margin-right: 10px; border-radius: 50%;
+      background: linear-gradient(135deg, #ffa500 0%, #ff8c00 100%); display: inline-flex; align-items: center; justify-content: center;
+      font-weight: bold; color: #1a202c; font-size: 14px;
+    }
+    .bet-input { background: transparent; border: none; color: white; font-size: 18px; font-weight: 600; outline: none; flex: 1; min-width: 60px; max-width: 100px; }
+
+    .bet-multipliers { display: flex; gap: 6px; margin-left: auto; padding-left: 8px; }
+    .multiplier-btn { background: rgba(74,85,104,.5); border: 1px solid #4a5568; color: #cbd5e0; padding: 5px 8px; border-radius: 6px; cursor: pointer; transition: all .2s; font-size: 12px; white-space: nowrap; font-weight: 600; }
+    .multiplier-btn:hover { background: rgba(104,211,145,.2); border-color: #68d391; color: white; }
+
+    .max-btn { background: linear-gradient(135deg,#68d391 0%,#48bb78 100%); color: #1a202c; padding: 8px 14px; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all .2s; white-space: nowrap; flex-shrink: 0; }
+    .max-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(104,211,145,.3); }
+
+    .grid-selector { display: flex; gap: 10px; }
+    .grid-option { flex: 1; padding: 12px; background: rgba(45,55,72,.5); border: 2px solid #4a5568; border-radius: 10px; cursor: pointer; transition: all .3s; text-align: center; font-weight: 600; }
+    .grid-option.active { background: rgba(104,211,145,.2); border-color: #68d391; color: #68d391; }
+    .grid-option:hover:not(.active) { background: rgba(74,85,104,.5); }
+
+    .slider-container { background: rgba(45,55,72,.5); border-radius: 12px; padding: 15px; }
+    .slider-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .gem-count { color: #68d391; font-size: 24px; font-weight: bold; }
+    .bomb-count { color: #f56565; font-size: 24px; font-weight: bold; }
+
+    .slider { width: 100%; height: 6px; border-radius: 3px;
+      background: linear-gradient(to right, #68d391 0%, #68d391 var(--gem-percentage), #f56565 var(--gem-percentage), #f56565 100%);
+      outline: none; -webkit-appearance: none; margin: 10px 0; }
+    .slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; border-radius: 50%; background: white; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
+    .slider::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; background: white; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
+
+    .play-btn { width: 100%; padding: 16px; background: linear-gradient(135deg, #68d391 0%, #48bb78 100%); border: none; border-radius: 12px; color: #1a202c; font-size: 18px; font-weight: bold; cursor: pointer; transition: all .3s; text-transform: uppercase; letter-spacing: 1px; }
+    .play-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(104,211,145,.4); }
+    .play-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    .max-win { text-align: center; margin-top: 20px; color: #68d391; font-size: 16px; }
+    .max-win-amount { font-size: 24px; font-weight: bold; display: inline-flex; align-items: center; gap: 5px; }
+
+    .win-popup, .lose-popup {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%) scale(0);
+      background: rgba(30,35,50,.98); border-radius: 16px; padding: 30px 40px; text-align: center; z-index: 1000;
+      animation: popupAppear .3s ease forwards; box-shadow: 0 20px 60px rgba(0,0,0,.5); min-width: 250px;
+    }
+    .win-popup { border: 3px solid #22c55e; }
+    .lose-popup { border: 3px solid #ef4444; }
+    .win-popup.show, .lose-popup.show { animation: popupAppear .3s ease forwards; }
+    .win-popup.hide, .lose-popup.hide { animation: popupDisappear .3s ease forwards; }
+    @keyframes popupAppear { 0%{transform:translate(-50%,-50%) scale(0); opacity:0;} 50%{transform:translate(-50%,-50%) scale(1.1);} 100%{transform:translate(-50%,-50%) scale(1); opacity:1;} }
+    @keyframes popupDisappear { 0%{transform:translate(-50%,-50%) scale(1); opacity:1;} 100%{transform:translate(-50%,-50%) scale(0); opacity:0;} }
+
+    .win-multiplier { font-size: 36px; font-weight: bold; color: #22c55e; margin-bottom: 10px; text-shadow: 0 0 20px rgba(34,197,94,.5); }
+    .win-amount { font-size: 24px; color: white; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .win-currency-icon { width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg,#ffa500 0%,#ff8c00 100%); display: inline-flex; align-items: center; justify-content: center; font-weight: bold; color: #1a202c; font-size: 14px; }
+    .lose-text { font-size: 28px; font-weight: bold; color: #ef4444; margin-bottom: 10px; text-shadow: 0 0 20px rgba(239,68,68,.5); }
+    .lose-amount { font-size: 20px; color: white; font-weight: 600; }
+
+    .popup-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,.7); z-index: 999; opacity: 0; animation: fadeIn .3s ease forwards; }
+    .popup-overlay.hide { animation: fadeOut .3s ease forwards; }
+    @keyframes fadeIn { to { opacity: 1; } }
+    @keyframes fadeOut { to { opacity: 0; } }
+
+    @media (max-width: 768px) {
+      body { padding: 10px; }
+      .game-container { flex-direction: column; align-items: center; gap: 20px; }
+      .controls-panel { order: 1; max-width: 100%; width: 100%; min-width: unset; padding: 20px; }
+      .game-board-container { order: 2; width: 100%; }
+      .game-progress-panel { max-width: 100%; padding: 20px; }
+      .game-board { padding: 12px; width: 100%; max-width: 400px; margin: 0 auto; }
+      .tile { width: calc((100vw - 80px) / 5); height: calc((100vw - 80px) / 5); max-width: 60px; max-height: 60px; font-size: 20px; }
+    }
+
+    /* ===================== 5 THEMES + TOGGLE BUTTON ===================== */
+    /* 1) Playful & Bright */
+    .theme-playful { --bg1:#FDF6E3; --bg2:#FFF8ED; --panel:rgba(255,255,255,.92); --text:#333333; --muted:#666; --primary:#FF6B6B; --secondary:#FFD93D; --accent:#6BCB77; --safe:#6BCB77; --danger:#ff6575; --tile-1:#FFE9E9; --tile-2:#FFEFD6; }
+    .theme-playful body { background: linear-gradient(135deg,var(--bg1) 0%,var(--bg2) 100%); color: var(--text); }
+    .theme-playful .controls-panel, .theme-playful .game-progress-panel, .theme-playful .game-board { background: var(--panel); box-shadow: 0 8px 28px rgba(0,0,0,.08); }
+    .theme-playful .progress-label, .theme-playful .payout-label, .theme-playful .next-gem-label { color: var(--muted); }
+    .theme-playful .currency-icon { background: linear-gradient(135deg,var(--secondary) 0%,var(--primary) 100%); color:#2b2b2b; }
+    .theme-playful .bet-input-container { background:#fff; border-color: var(--secondary); }
+    .theme-playful .bet-input { color: var(--text); }
+    .theme-playful .play-btn, .theme-playful .cashout-btn-panel { background: linear-gradient(135deg,var(--primary) 0%,var(--secondary) 100%); color:#fff; }
+    .theme-playful .max-btn { background: linear-gradient(135deg,var(--accent) 0%, #8be39a 100%); color:#09351a; }
+    .theme-playful .tile { background: linear-gradient(135deg,var(--tile-1) 0%,var(--tile-2) 100%); color: var(--text); }
+    .theme-playful .tile:hover:not(.revealed):not(.game-over){ background: linear-gradient(135deg,#ffe1e1 0%, #ffebc2 100%); }
+    .theme-playful .tile.gem { background: linear-gradient(135deg,#c7f7d5 0%, var(--accent) 100%); color:#0f2d19; }
+    .theme-playful .tile.bomb { background: linear-gradient(135deg,#ff9aa4 0%, var(--danger) 100%); color:#fff; }
+    .theme-playful #payoutMultiplier, .theme-playful .max-win, .theme-playful .next-gem-value, .theme-playful .payout-amount { color: var(--safe); }
+    .theme-playful .slider { background: linear-gradient(to right, var(--safe) 0%, var(--safe) var(--gem-percentage), var(--danger) var(--gem-percentage), var(--danger) 100%); }
+
+    /* 2) Soft Pastels */
+    .theme-pastels { --bg1:#F0F4EF; --bg2:#F6FAF6; --panel:rgba(255,255,255,.95); --text:#222; --muted:#555; --primary:#A393EB; --secondary:#FEC8D8; --accent:#A8E6CF; --safe:#7ed9bf; --danger:#f09aa8; --tile-1:#f5f2ff; --tile-2:#fff2f6; }
+    .theme-pastels body { background: linear-gradient(135deg,var(--bg1) 0%,var(--bg2) 100%); color: var(--text); }
+    .theme-pastels .controls-panel, .theme-pastels .game-progress-panel, .theme-pastels .game-board { background: var(--panel); box-shadow: 0 8px 24px rgba(0,0,0,.06); }
+    .theme-pastels .progress-label, .theme-pastels .payout-label, .theme-pastels .next-gem-label { color: var(--muted); }
+    .theme-pastels .currency-icon { background: linear-gradient(135deg,var(--primary) 0%,var(--secondary) 100%); color:#fff; }
+    .theme-pastels .bet-input-container { background:#fff; border-color: var(--primary); }
+    .theme-pastels .play-btn, .theme-pastels .cashout-btn-panel { background: linear-gradient(135deg,var(--primary) 0%,var(--secondary) 100%); color:#fff; }
+    .theme-pastels .max-btn { background: linear-gradient(135deg,var(--accent) 0%, #c8f3e2 100%); color:#1a3a30; }
+    .theme-pastels .tile { background: linear-gradient(135deg,var(--tile-1) 0%,var(--tile-2) 100%); color: var(--text); }
+    .theme-pastels .tile:hover:not(.revealed):not(.game-over){ background: linear-gradient(135deg,#ece6ff 0%, #ffe6ef 100%); }
+    .theme-pastels .tile.gem { background: linear-gradient(135deg,#dbfff1 0%, var(--accent) 100%); color:#134437; }
+    .theme-pastels .tile.bomb { background: linear-gradient(135deg,#ffc0cc 0%, #ff90a3 100%); color:#fff; }
+    .theme-pastels #payoutMultiplier, .theme-pastels .max-win, .theme-pastels .next-gem-value, .theme-pastels .payout-amount { color: var(--safe); }
+    .theme-pastels .slider { background: linear-gradient(to right, var(--safe) 0%, var(--safe) var(--gem-percentage), var(--danger) var(--gem-percentage), var(--danger) 100%); }
+
+    /* 3) Retro Pixel Style */
+    .theme-retro { --bg1:#1B1B1B; --bg2:#111; --panel:#1e1e1e; --text:#fff; --muted:#FAF3DD; --primary:#FF3C38; --secondary:#FFD23F; --accent:#3ED598; --safe:#3ED598; --danger:#FF3C38; --tile-1:#242424; --tile-2:#1a1a1a; --pixel-border:4px solid #FAF3DD; --pixel-shadow:0 0 0 4px #000 inset; }
+    .theme-retro body { background: radial-gradient(800px 500px at 20% 10%, #232323 0%, #0f0f0f 60%); color: var(--text); image-rendering: pixelated; }
+    .theme-retro .controls-panel, .theme-retro .game-progress-panel, .theme-retro .game-board { background: var(--panel); border: var(--pixel-border); box-shadow: var(--pixel-shadow); }
+    .theme-retro .progress-label, .theme-retro .payout-label, .theme-retro .next-gem-label { color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+    .theme-retro .currency-icon { background: linear-gradient(180deg,var(--secondary) 0%,var(--primary) 100%); color:#1b1b1b; border:2px solid #FAF3DD; }
+    .theme-retro .bet-input-container { background:#151515; border:2px solid var(--secondary); }
+    .theme-retro .play-btn, .theme-retro .cashout-btn-panel { background: linear-gradient(180deg,var(--primary) 0%,var(--secondary) 100%); color:#1b1b1b; border:2px solid #FAF3DD; text-shadow: none; }
+    .theme-retro .max-btn { background: linear-gradient(180deg,var(--accent) 0%, #8affc8 100%); color:#001a11; border:2px solid #FAF3DD; }
+    .theme-retro .tile { background: linear-gradient(180deg,var(--tile-1) 0%,var(--tile-2) 100%); border:2px solid #FAF3DD; border-radius: 6px; }
+    .theme-retro .tile:hover:not(.revealed):not(.game-over){ transform: translateY(-1px); }
+    .theme-retro .tile.gem { background: linear-gradient(180deg,#4bf2ae 0%, var(--accent) 100%); color:#001b11; }
+    .theme-retro .tile.bomb { background: linear-gradient(180deg,#ff6b66 0%, var(--danger) 100%); color:#fff; }
+    .theme-retro #payoutMultiplier, .theme-retro .max-win, .theme-retro .next-gem-value, .theme-retro .payout-amount { color: var(--accent); }
+    .theme-retro .slider { height: 8px; border:2px solid #FAF3DD; background: linear-gradient(to right, var(--safe) 0%, var(--safe) var(--gem-percentage), var(--danger) var(--gem-percentage), var(--danger) 100%); }
+
+    /* 4) Candy / Whimsical */
+    .theme-candy { --bg1:#FFF0F5; --bg2:#fff6fb; --panel:rgba(255,255,255,.96); --text:#5A5A5A; --muted:#7a7a7a; --primary:#FF69B4; --secondary:#87CEFA; --accent:#FFD700; --safe:#ffcf5a; --danger:#ff6b8a; --tile-1:#ffe6f1; --tile-2:#eaf6ff; }
+    .theme-candy body { background: radial-gradient(900px 700px at 80% 0%, #ffe6f1 0%, var(--bg1) 60%); color: var(--text); }
+    .theme-candy .controls-panel, .theme-candy .game-progress-panel, .theme-candy .game-board { background: var(--panel); box-shadow: 0 10px 28px rgba(255,105,180,.15); }
+    .theme-candy .progress-label, .theme-candy .payout-label, .theme-candy .next-gem-label { color: var(--muted); }
+    .theme-candy .currency-icon { background: linear-gradient(135deg,var(--accent) 0%,var(--secondary) 100%); color:#3a2a00; }
+    .theme-candy .bet-input-container { background:#fff; border-color: var(--primary); }
+    .theme-candy .play-btn, .theme-candy .cashout-btn-panel { background: linear-gradient(135deg,var(--primary) 0%,var(--secondary) 100%); color:#fff; }
+    .theme-candy .max-btn { background: linear-gradient(135deg,var(--accent) 0%, #ffe680 100%); color:#5b4300; }
+    .theme-candy .tile { background: linear-gradient(135deg,var(--tile-1) 0%,var(--tile-2) 100%); color: var(--text); }
+    .theme-candy .tile:hover:not(.revealed):not(.game-over){ background: linear-gradient(135deg,#ffd8ec 0%, #dbf0ff 100%); }
+    .theme-candy .tile.gem { background: linear-gradient(135deg,#fff1b8 0%, var(--accent) 100%); color:#5b4300; }
+    .theme-candy .tile.bomb { background: linear-gradient(135deg,#ffa0bf 0%, #ff6b8a 100%); color:#fff; }
+    .theme-candy #payoutMultiplier, .theme-candy .max-win, .theme-candy .next-gem-value, .theme-candy .payout-amount { color: var(--safe); }
+    .theme-candy .slider { background: linear-gradient(to right, var(--safe) 0%, var(--safe) var(--gem-percentage), var(--danger) var(--gem-percentage), var(--danger) 100%); }
+
+    /* 5) Minimal / Calm Puzzle */
+    .theme-minimal { --bg1:#FAFAFA; --bg2:#f2f5f8; --panel:#ffffff; --text:#2D3436; --muted:#6b7280; --primary:#4A90E2; --secondary:#7ED6DF; --accent:#F6E58D; --safe:#16a085; --danger:#e74c3c; --tile-1:#eef2f7; --tile-2:#e6ebf3; }
+    .theme-minimal body { background: linear-gradient(135deg,var(--bg2) 0%,var(--bg1) 100%); color: var(--text); }
+    .theme-minimal .controls-panel, .theme-minimal .game-progress-panel, .theme-minimal .game-board { background: var(--panel); box-shadow: 0 8px 24px rgba(15,23,42,.06); }
+    .theme-minimal .progress-label, .theme-minimal .payout-label, .theme-minimal .next-gem-label { color: var(--muted); }
+    .theme-minimal .currency-icon { background: linear-gradient(135deg,var(--primary) 0%,var(--secondary) 100%); color:#fff; }
+    .theme-minimal .bet-input-container { background:#f6f8fb; border-color: var(--primary); }
+    .theme-minimal .bet-input { color: var(--text); }
+    .theme-minimal .play-btn, .theme-minimal .cashout-btn-panel { background: linear-gradient(135deg,var(--primary) 0%,var(--secondary) 100%); color:#fff; }
+    .theme-minimal .max-btn { background: linear-gradient(135deg,var(--accent) 0%, #ffeaa7 100%); color:#4a3f09; }
+    .theme-minimal .tile { background: linear-gradient(135deg,var(--tile-1) 0%,var(--tile-2) 100%); color: var(--text); }
+    .theme-minimal .tile:hover:not(.revealed):not(.game-over){ background: linear-gradient(135deg,#e3e9f2 0%, #dbe3ee 100%); }
+    .theme-minimal .tile.gem { background: linear-gradient(135deg,#ccf5ea 0%, #a8ede1 100%); }
+    .theme-minimal .tile.bomb { background: linear-gradient(135deg,#ffd6d1 0%, #ff9f95 100%); color:#611e1a; }
+    .theme-minimal #payoutMultiplier, .theme-minimal .max-win, .theme-minimal .next-gem-value, .theme-minimal .payout-amount { color: var(--safe); }
+    .theme-minimal .slider { background: linear-gradient(to right, var(--safe) 0%, var(--safe) var(--gem-percentage), var(--danger) var(--gem-percentage), var(--danger) 100%); }
+
+    /* Toggle button */
+    .theme-toggle {
+      position: fixed; right: 16px; bottom: 16px; z-index: 1200; padding: 10px 14px; border-radius: 10px; border: none;
+      cursor: pointer; font-weight: 700; letter-spacing: .02em; box-shadow: 0 8px 22px rgba(0,0,0,.18); transition: transform .15s ease;
+    }
+    .theme-toggle:hover { transform: translateY(-1px); }
+    .theme-playful .theme-toggle,
+    .theme-pastels .theme-toggle,
+    .theme-candy .theme-toggle,
+    .theme-minimal .theme-toggle { background: linear-gradient(135deg, var(--primary), var(--secondary)); color:#fff; }
+    .theme-retro .theme-toggle { background: linear-gradient(180deg, var(--primary), var(--secondary)); color:#1b1b1b; border:2px solid #FAF3DD; }
   </style>
 </head>
-<body>
-  <h1>💣 Mines Game – Raza Edition</h1>
-  <div id="game"></div>
-  <button onclick="initBoard()">Restart Game</button>
+
+<!-- Default theme -->
+<body class="theme-playful">
+  <div class="popup-overlay" id="popupOverlay" style="display: none;"></div>
+
+  <div class="win-popup" id="winPopup" style="display: none;">
+    <div class="win-multiplier" id="winMultiplier">1.00x</div>
+    <div class="win-amount">
+      <span class="win-currency-icon">S</span>
+      <span id="winAmount">0.00</span>
+    </div>
+  </div>
+
+  <div class="game-container">
+    <div class="controls-panel">
+      <!-- Bet Panel -->
+      <div id="betPanel">
+        <div class="section">
+          <div class="section-title">Bet Amount</div>
+          <div style="display:flex; align-items:center; gap:8px; width:100%;">
+            <div class="bet-input-container">
+              <span class="currency-icon">S</span>
+              <input type="number" class="bet-input" id="betAmount" value="0.01" min="0.01" step="0.01" />
+              <div class="bet-multipliers">
+                <button class="multiplier-btn" onclick="multiplyBet(0.5)">1/2</button>
+                <button class="multiplier-btn" onclick="multiplyBet(2)">x2</button>
+              </div>
+            </div>
+            <button class="max-btn" onclick="setMaxBet()">MAX</button>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Grid Size</div>
+          <div class="grid-selector">
+            <div class="grid-option active" onclick="setGridSize(25, this)">25</div>
+            <div class="grid-option" onclick="setGridSize(36, this)">36</div>
+            <div class="grid-option" onclick="setGridSize(49, this)">49</div>
+            <div class="grid-option" onclick="setGridSize(64, this)">64</div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Gem / Bomb Count</div>
+          <div class="slider-container">
+            <div class="slider-header">
+              <div>💎 <span class="gem-count" id="gemCount">20</span></div>
+              <div>💣 <span class="bomb-count" id="bombCount">5</span></div>
+            </div>
+            <input type="range" class="slider" id="gemSlider" min="1" max="24" value="20" oninput="updateGemBombCount(this.value)" />
+          </div>
+        </div>
+
+        <button class="play-btn" id="playBtn" onclick="startGame()">PLAY</button>
+
+        <div class="max-win">
+          Max Win:
+          <span class="max-win-amount">
+            <span class="currency-icon" style="width:20px;height:20px;font-size:12px;">S</span>
+            <span id="maxWin">1,000,000</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- Progress Panel -->
+      <div id="progressPanel" style="display:none;">
+        <div class="progress-stats">
+          <div class="progress-stat">
+            <div class="progress-label">Gems Found</div>
+            <div class="progress-value">
+              💎 <span id="gemsFoundDisplay">0</span>/<span id="totalGemsDisplay">20</span>
+            </div>
+          </div>
+          <div class="progress-stat">
+            <div class="progress-label">Bombs Count</div>
+            <div class="progress-value">
+              💣 <span id="bombsCountDisplay">5</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="payout-section">
+          <div class="payout-label">Total Payout <span id="payoutMultiplier">x1.00</span></div>
+          <div class="payout-amount">
+            <span class="currency-icon">S</span>
+            <span id="payoutAmount">0.00</span>
+          </div>
+        </div>
+
+        <div class="next-gem-section">
+          <div class="next-gem-label">
+            Next Gem:
+            <span class="next-gem-value">
+              <span class="currency-icon" style="width:16px;height:16px;font-size:10px;">S</span>
+              <span id="nextGemValue">0.00</span>
+            </span>
+          </div>
+        </div>
+
+        <button class="cashout-btn-panel" onclick="cashout()">CASHOUT</button>
+      </div>
+    </div>
+
+    <div class="game-board-container">
+      <div class="game-board" id="gameBoard"></div>
+    </div>
+  </div>
+
+  <!-- Theme toggle button -->
+  <button id="themeToggle" class="theme-toggle">Theme: Playful</button>
 
   <script>
-    const rows = 5;
-    const cols = 5;
+    /* ===================== GAME LOGIC (with image tiles) ===================== */
+    let gridSize = 25;
+    let gemCount = 20;
     let bombCount = 5;
-    let revealed = 0;
-    let board = [];
+    let balance = 1000;
+    let betAmount = 0.01;
+    let currentMultiplier = 1;
+    let gameActive = false;
+    let revealedTiles = [];
+    let tileStates = [];
+    let gemsFound = 0;
+    let maxGems = 24;
 
-    function initBoard() {
-      const game = document.getElementById("game");
-      game.innerHTML = "";
-      board = [];
+    const GEM_IMG = 'raza hair.jpg';
+    const BOMB_IMG = 'raza cap.png';
 
-      for (let r = 0; r < rows; r++) {
-        const row = [];
-        for (let c = 0; c < cols; c++) {
-          const cell = document.createElement("div");
-          cell.classList.add("cell");
-          cell.dataset.row = r;
-          cell.dataset.col = c;
-          cell.onclick = () => revealCell(r, c, cell);
-          game.appendChild(cell);
-          row.push({ bomb: false, revealed: false, element: cell });
-        }
-        board.push(row);
+    function initializeGame() {
+      updateBalance();
+      createBoard();
+      updateSliderBackground();
+    }
+
+    function createBoard() {
+      const board = document.getElementById('gameBoard');
+      board.innerHTML = '';
+
+      const cols = Math.sqrt(gridSize);
+      board.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+      board.setAttribute('data-size', gridSize);
+
+      tileStates = [];
+      revealedTiles = [];
+
+      // Create tiles
+      for (let i = 0; i < gridSize; i++) {
+        const tile = document.createElement('button');
+        tile.className = 'tile pickaxe';
+        tile.dataset.index = i;
+        tile.onclick = () => revealTile(i);
+        tile.addEventListener('touchstart', (e) => { e.preventDefault(); revealTile(i); }, { passive: false });
+        board.appendChild(tile);
+        tileStates.push(null);
       }
 
-      // place bombs
-      let bombsPlaced = 0;
-      while (bombsPlaced < bombCount) {
-        const r = Math.floor(Math.random() * rows);
-        const c = Math.floor(Math.random() * cols);
-        if (!board[r][c].bomb) {
-          board[r][c].bomb = true;
-          bombsPlaced++;
-        }
+      // Place bombs
+      const bombIndices = new Set();
+      while (bombIndices.size < bombCount) {
+        bombIndices.add(Math.floor(Math.random() * gridSize));
+      }
+      for (let i = 0; i < gridSize; i++) {
+        tileStates[i] = bombIndices.has(i) ? 'bomb' : 'gem';
       }
     }
 
-    function revealCell(r, c, cell) {
-      const spot = board[r][c];
-      if (spot.revealed) return;
-      spot.revealed = true;
-      cell.classList.add("revealed");
+    function setGridSize(size, element) {
+      if (gameActive) return;
 
-      if (spot.bomb) {
-        cell.innerHTML = `<img src="raza cap.png" alt="Bomb">`;
-        setTimeout(() => alert("💥 Boom! You hit a bomb!"), 100);
+      gridSize = size;
+      document.querySelectorAll('.grid-option').forEach(opt => opt.classList.remove('active'));
+      element.classList.add('active');
+
+      maxGems = size - 1;
+      document.getElementById('gemSlider').max = maxGems;
+
+      if (gemCount > maxGems) {
+        gemCount = maxGems;
+        bombCount = gridSize - gemCount;
+        document.getElementById('gemCount').textContent = gemCount;
+        document.getElementById('bombCount').textContent = bombCount;
+        document.getElementById('gemSlider').value = gemCount;
+        updateSliderBackground();
+      }
+      createBoard();
+    }
+
+    function updateGemBombCount(value) {
+      if (gameActive) return;
+      gemCount = parseInt(value);
+      bombCount = gridSize - gemCount;
+
+      document.getElementById('gemCount').textContent = gemCount;
+      document.getElementById('bombCount').textContent = bombCount;
+      updateSliderBackground();
+    }
+
+    function updateSliderBackground() {
+      const slider = document.getElementById('gemSlider');
+      const percentage = (gemCount / gridSize) * 100;
+      slider.style.setProperty('--gem-percentage', percentage + '%');
+    }
+
+    function multiplyBet(factor) {
+      if (gameActive) return;
+      betAmount = Math.max(0.01, betAmount * factor);
+      betAmount = Math.min(betAmount, balance);
+      betAmount = Math.round(betAmount * 100) / 100;
+      document.getElementById('betAmount').value = betAmount.toFixed(2);
+    }
+
+    function setMaxBet() {
+      if (gameActive) return;
+      betAmount = balance;
+      document.getElementById('betAmount').value = betAmount.toFixed(2);
+    }
+
+    function updateBalance() {
+      // Using balance for logic only; not displayed.
+    }
+
+    function calculateMultiplier() {
+      if (gemsFound === 0) return 1;
+      const N = gridSize;
+      const S = gridSize - bombCount;
+      const k = gemsFound;
+      let multiplier = 1;
+      for (let t = 1; t <= k; t++) {
+        multiplier *= (N - (t - 1)) / (S - (t - 1));
+      }
+      return multiplier;
+    }
+
+    function calculateNextMultiplier() {
+      const N = gridSize;
+      const S = gridSize - bombCount;
+      const k = gemsFound + 1;
+      if (k > S) return currentMultiplier;
+      let multiplier = 1;
+      for (let t = 1; t <= k; t++) {
+        multiplier *= (N - (t - 1)) / (S - (t - 1));
+      }
+      return multiplier;
+    }
+
+    function updateProgressPanel() {
+      document.getElementById('gemsFoundDisplay').textContent = gemsFound;
+      document.getElementById('totalGemsDisplay').textContent = gemCount;
+      document.getElementById('bombsCountDisplay').textContent = bombCount;
+      document.getElementById('payoutMultiplier').textContent = 'x' + currentMultiplier.toFixed(4);
+      document.getElementById('payoutAmount').textContent = (betAmount * currentMultiplier).toFixed(2);
+
+      if (gemsFound < gemCount) {
+        const nextMultiplier = calculateNextMultiplier();
+        const currentPayout = betAmount * currentMultiplier;
+        const nextPayout = betAmount * nextMultiplier;
+        const nextGemValue = nextPayout - currentPayout;
+        document.getElementById('nextGemValue').textContent = nextGemValue.toFixed(2);
       } else {
-        cell.innerHTML = `<img src="raza hair.jpg" alt="Gem">`;
-        revealed++;
+        document.getElementById('nextGemValue').textContent = '0.00';
       }
     }
 
-    window.onload = initBoard;
+    function startGame() {
+      betAmount = parseFloat(document.getElementById('betAmount').value);
+      if (betAmount > balance) { alert('Insufficient balance!'); return; }
+      balance -= betAmount;
+      updateBalance();
+
+      gameActive = true;
+      gemsFound = 0;
+      currentMultiplier = 1;
+      revealedTiles = [];
+
+      createBoard();
+
+      document.getElementById('betPanel').style.display = 'none';
+      document.getElementById('progressPanel').style.display = 'block';
+      updateProgressPanel();
+    }
+
+    function setTileImage(tile, isBomb) {
+      tile.innerHTML = '';
+      const img = document.createElement('img');
+      img.className = 'tile-img';
+      img.alt = isBomb ? 'Bomb' : 'Gem';
+      img.src = isBomb ? BOMB_IMG : GEM_IMG;
+      tile.appendChild(img);
+    }
+
+    function revealTile(index) {
+      if (!gameActive || revealedTiles.includes(index)) return;
+
+      const tiles = document.querySelectorAll('.tile');
+      const tile = tiles[index];
+      const state = tileStates[index];
+
+      revealedTiles.push(index);
+      tile.classList.add('revealed');
+      tile.classList.remove('pickaxe');
+
+      if (state === 'bomb') {
+        tile.classList.add('bomb');
+        setTileImage(tile, true);
+        gameOver(false);
+      } else {
+        tile.classList.add('gem');
+        setTileImage(tile, false);
+        gemsFound++;
+        currentMultiplier = calculateMultiplier();
+        updateProgressPanel();
+        if (gemsFound === gemCount) gameOver(true);
+      }
+    }
+
+    function showWinPopup(multiplier, amount) {
+      const overlay = document.getElementById('popupOverlay');
+      const popup = document.getElementById('winPopup');
+
+      document.getElementById('winMultiplier').textContent = multiplier.toFixed(4) + 'x';
+      document.getElementById('winAmount').textContent = amount.toFixed(2);
+
+      overlay.style.display = 'block';
+      popup.style.display = 'block';
+      overlay.classList.remove('hide');
+      popup.classList.remove('hide');
+      popup.classList.add('show');
+
+      setTimeout(() => {
+        overlay.classList.add('hide');
+        popup.classList.add('hide');
+        popup.classList.remove('show');
+        setTimeout(() => { overlay.style.display = 'none'; popup.style.display = 'none'; }, 300);
+      }, 2500);
+    }
+
+    function revealAllTiles(dimUnclicked = false) {
+      const tiles = document.querySelectorAll('.tile');
+      tiles.forEach((tile, index) => {
+        if (!revealedTiles.includes(index)) {
+          tile.classList.add('revealed', 'game-over');
+          tile.classList.remove('pickaxe');
+          if (tileStates[index] === 'bomb') {
+            tile.classList.add('bomb');
+            setTileImage(tile, true);
+          } else {
+            tile.classList.add('gem');
+            setTileImage(tile, false);
+            if (dimUnclicked) tile.style.opacity = '0.5';
+          }
+        }
+      });
+    }
+
+    function gameOver(won) {
+      gameActive = false;
+      revealAllTiles();
+      if (won) {
+        const payout = betAmount * currentMultiplier;
+        balance += payout;
+        updateBalance();
+        showWinPopup(currentMultiplier, payout);
+      }
+      resetGame();
+    }
+
+    function cashout() {
+      if (!gameActive) return;
+      const payout = betAmount * currentMultiplier;
+      balance += payout;
+      updateBalance();
+      showWinPopup(currentMultiplier, payout);
+      gameActive = false;
+      revealAllTiles(true);
+      resetGame();
+    }
+
+    function resetGame() {
+      document.getElementById('progressPanel').style.display = 'none';
+      document.getElementById('betPanel').style.display = 'block';
+      currentMultiplier = 1;
+      setTimeout(() => createBoard(), 1000);
+    }
+
+    // Initialize game on load
+    initializeGame();
+  </script>
+
+  <!-- Theme Toggle Logic -->
+  <script>
+    (function () {
+      const themes = [
+        { cls: "theme-playful", label: "Playful" },
+        { cls: "theme-pastels", label: "Pastels" },
+        { cls: "theme-retro",   label: "Retro" },
+        { cls: "theme-candy",   label: "Candy" },
+        { cls: "theme-minimal", label: "Minimal" },
+      ];
+      const body = document.body;
+      const btn  = document.getElementById("themeToggle");
+
+      let idx = Math.max(0, themes.findIndex(t => body.classList.contains(t.cls)));
+      if (idx === -1) { idx = 0; body.classList.add(themes[0].cls); }
+      btn.textContent = "Theme: " + themes[idx].label;
+
+      function setTheme(i) {
+        body.classList.remove(...themes.map(t => t.cls));
+        body.classList.add(themes[i].cls);
+        btn.textContent = "Theme: " + themes[i].label;
+      }
+
+      btn.addEventListener("click", () => {
+        idx = (idx + 1) % themes.length;
+        setTheme(idx);
+      });
+
+      // Keyboard shortcut: T
+      window.addEventListener("keydown", (e) => {
+        if (e.key.toLowerCase() === "t") {
+          idx = (idx + 1) % themes.length;
+          setTheme(idx);
+        }
+      });
+    })();
   </script>
 </body>
 </html>
